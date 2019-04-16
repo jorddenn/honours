@@ -14,7 +14,7 @@ Path[] paths;
 
 Table table;
 
-String file = "image3a";
+String file = "image1";
 
 int divisor = 3;
 int percentStrands = 100;
@@ -27,7 +27,7 @@ void setup() {
   size(1, 1);
   surface.setResizable(true);
 
-  img = loadImage(file + ".JPG");
+  img = loadImage(file + ".jpg");
 
   surface.setSize(img.width / divisor, img.height / divisor);
   

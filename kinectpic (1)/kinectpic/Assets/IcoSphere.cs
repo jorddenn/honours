@@ -17,6 +17,15 @@ public class IcoSphere : MonoBehaviour
     Vector3[] hairRegion;
     bool[] strandUsed;
     Mesh mesh;
+    public Texture2D orig;
+    Texture2D tex;
+    GameObject[] strands;
+    GameObject[] origStrands;
+    int offset, interp;
+
+    BezierSpline[] spline;
+    Vector3[,] origspline;
+
 
     struct TriangleIndices
     {
@@ -32,10 +41,14 @@ public class IcoSphere : MonoBehaviour
         }
     }
 
-    
+
 
     void Awake()
     {
+        tex = Instantiate(orig);
+        tex.hideFlags = HideFlags.HideAndDontSave;
+        Debug.Log(tex.height);
+        //loadTex();
         loadCSV();
         generateSphere();
     }
@@ -70,7 +83,7 @@ public class IcoSphere : MonoBehaviour
         List<Vector3> vertList = new List<Vector3>();
         Dictionary<long, int> middlePointIndexCache = new Dictionary<long, int>();
 
-        int recursionLevel = 4;
+        int recursionLevel = 5;
         float radius = 1f;
 
         // create 12 vertices of a icosahedron
@@ -163,6 +176,10 @@ public class IcoSphere : MonoBehaviour
         mesh.normals = normales;
 
         mesh.RecalculateBounds();
+
+        MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
+        mr.material = new Material(Shader.Find("Diffuse"));
+
     }
 
     int getMiddlePoint(int p1, int p2, ref List<Vector3> vertices, ref Dictionary<long, int> cache, float radius)
@@ -211,14 +228,14 @@ public class IcoSphere : MonoBehaviour
 
     void loadCSV()
     {
-        fileData = System.IO.File.ReadAllText("Assets/image1az.csv");
+        fileData = System.IO.File.ReadAllText("Assets/image1azz.csv");
         lines = fileData.Split('\n');
         lineData = (lines[0].Trim()).Split(',');
         data = new float[lines.Length, lineData.Length];
         //data = new float[12, lineData.Length];
         for (int i = 0; i < lines.Length; i++)
         //for (int i = 0; i < 12; i++)
-            {
+        {
             lineData = (lines[i].Trim()).Split(',');
             for (int r = 0; r < lineData.Length; r++)
             {
@@ -226,6 +243,7 @@ public class IcoSphere : MonoBehaviour
                 data[i, r] = x;
             }
         }
+        strands = new GameObject[data.GetLength(0) / 3];
     }
 
 
@@ -233,10 +251,21 @@ public class IcoSphere : MonoBehaviour
 
 
 
+    void loadTex()
+    {
+        tex = new Texture2D(2, 2);
+        tex = Resources.Load<Texture2D>("Assets/image1a.jpg");
+        tex.hideFlags = HideFlags.HideAndDontSave;
+        Debug.Log(tex.height);
+    }
+
+
+
+
 
     void drawVertexNormals()
     {
-        float normalLength = 0.1f;
+        //float normalLength = 0.1f;
 
         mesh = GetComponent<MeshFilter>().mesh;
 
@@ -247,7 +276,7 @@ public class IcoSphere : MonoBehaviour
         {
             Vector3 norm = transform.TransformDirection(mesh.normals[i]);
             Vector3 vert = transform.TransformPoint(mesh.vertices[i]);
-            if (((vert.z > 0.3 && vert.y > -0.25) || vert.y > 0.25) && (vert.x < 0.5 || vert.x > -0.5))
+            if (((vert.z > 0.3 && vert.y > 0.25) || vert.y > 0.75) && (vert.x < 0.5 || vert.x > -0.5))
             {
                 strandUsed[i] = false;
                 //Debug.DrawRay(vert, norm * normalLength, Color.red);
@@ -296,18 +325,26 @@ public class IcoSphere : MonoBehaviour
 
     void drawCurve()
     {
-        BezierSpline[] spline = new BezierSpline[data.GetLength(0)];
+        spline = new BezierSpline[data.GetLength(0) / 3];
+
 
         bool found;
         int rand = 0;
-        int offset = 2;
+        offset = 1;
+        interp = 20;
 
-        Vector3 cur = new Vector3(0,0,0);
+        origspline = new Vector3[spline.Length, data.GetLength(1) + offset + interp];
+
+        Vector3 cur = new Vector3(0, 0, 0);
 
         for (int i = 0; i < data.GetLength(0) - 3; i += 3)
         {
-            spline[i / 3] = new GameObject().AddComponent<BezierSpline>();
-            spline[i / 3].Initialize(data.GetLength(1) + offset);
+            GameObject pine = new GameObject();
+            strands[i / 3] = pine;
+            pine.name = "Curve " + i / 3;
+            spline[i / 3] = pine.AddComponent<BezierSpline>();
+            spline[i / 3].Initialize(data.GetLength(1) + offset + interp);
+            //pine.SetActive(false);
             found = false;
 
             while (!found)
@@ -315,7 +352,8 @@ public class IcoSphere : MonoBehaviour
                 cur = new Vector3();
                 rand = Random.Range(0, hairRegion.Length);
                 cur = transform.TransformPoint(hairRegion[rand]);
-                if (strandUsed[rand] == false) {
+                if (strandUsed[rand] == false && (Mathf.Abs(cur.x - data[i, 0]) < 0.3) && (cur.y > data[i + 1, 0]))
+                {
                     strandUsed[rand] = true;
                     found = true;
                 }
@@ -324,17 +362,379 @@ public class IcoSphere : MonoBehaviour
             Vector3 norm = transform.TransformDirection(mesh.normals[rand]);
 
             spline[i / 3][0].position = new Vector3(cur.x, cur.y, cur.z);
-            spline[i / 3][1].position = new Vector3(cur.x + (0.1f * norm.x), cur.y + (0.1f * norm.y), cur.z + (0.1f * norm.z));
 
-            for (int r = offset; r < data.GetLength(1) + offset; r++)
+            for (int u = 0; u < interp + 1; u++)
             {
-                spline[i / 3][r].position = new Vector3(data[i, r - offset], data[i + 1, r - offset], data[i + 2, r - offset]);
-                spline[i / 3][r].handleMode = BezierPoint.HandleMode.Free;
+                spline[i / 3][1 + u].position = Vector3.Lerp(spline[i / 3][0].position, new Vector3(data[i, 0], data[i + 1, 0], data[i + 2, 0]), (float)(u + 1) / (float)interp);
+
+                if (spline[i / 3][1 + u].position.y < -0.25f)
+                {
+                    spline[i / 3][1 + u].position = new Vector3(spline[i / 3][1 + u].position.x, 1.0f, spline[i / 3][1 + u].position.z);
+                }
+                if ((Mathf.Pow(spline[i / 3][1 + u].position.x, 2.0f) + Mathf.Pow(spline[i / 3][1 + u].position.y - 0.5f, 2.0f) + Mathf.Pow(spline[i / 3][1 + u].position.z, 2.0f) < 1.0f) && spline[i / 3][0].position.y > 0.5f)
+                {
+                    float pos = Mathf.Pow(Mathf.Pow(1.0f, 2.0f) - Mathf.Pow(spline[i / 3][1 + u].position.x, 2.0f) - Mathf.Pow(spline[i / 3][1 + u].position.z, 2.0f), 0.5f) + 0.5f;
+                    spline[i / 3][1 + u].position = new Vector3(spline[i / 3][1 + u].position.x, pos * Mathf.Cos(spline[i / 3][1 + u].position.x) + 0.1f, spline[i / 3][1 + u].position.z);
+                }
+                else
+                {
+                    for (int r = u; r < interp + 1; r++)
+                    {
+                        spline[i / 3][1 + r].position = Vector3.Lerp(spline[i / 3][u].position, new Vector3(data[i, 0], data[i + 1, 0], data[i + 2, 0] - 0.25f), ((float)(r + 1) - (float)u) / ((float)interp - (float)u));
+                    }
+                    break;
+                }
+
+            }
+
+
+            for (int r = offset + interp; r < data.GetLength(1) + offset + interp; r++)
+            {
+                spline[i / 3][r].position = new Vector3(data[i, r - offset - interp], data[i + 1, r - offset - interp], data[i + 2, r - offset - interp]);
             }
             spline[i / 3].AutoConstructSpline2();
-            spline[i / 3].DrawGizmos(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f), 4);
+            spline[i / 3].HideGizmos();
+
+            for (int v = 0; v < origspline.GetLength(1); v++)
+            {
+                origspline[i / 3, v] = new Vector3(spline[i / 3][v].position.x, spline[i / 3][v].position.y, spline[i / 3][v].position.z);
+            }
+
+            LineRenderer lr = pine.AddComponent<LineRenderer>();
+
+            lr.positionCount = data.GetLength(1) + offset + interp;
+
+            List<Vector3> temp = new List<Vector3>();
+
+            for (int r = 0; r < data.GetLength(1) + offset + interp; r++)
+            {
+                temp.Add(spline[i / 3][r].position);
+            }
+
+            lr.SetPositions(temp.ToArray());
+            lr.startWidth = 0.01f;
+            lr.endWidth = 0.01f;
+
+            Material lineMat = new Material(Shader.Find("Particles/Standard Unlit"));
+
+            lr.material = lineMat;
+
+
+            Texture2D stran = new Texture2D(data.GetLength(1) + offset + interp, 1);
+
+            for (int t = 0; t < data.GetLength(1) + offset + interp; t++)
+            {
+                stran.SetPixel(t, 0, getFromImage(spline[i / 3][t].position));
+            }
+            stran.Apply();
+
+            lr.material.SetTexture("_MainTex", stran);
+
+            /*
+            Gradient gradient;
+            GradientColorKey[] colorKey;
+            GradientAlphaKey[] alphaKey;
+
+            gradient = new Gradient();
+
+            colorKey = new GradientColorKey[8];
+            alphaKey = new GradientAlphaKey[8];
+            Color pix = new Color();
+
+            for (int t = 1; t < 8; t++)
+            {
+                pix = getFromImage(spline[i / 3][offset + interp + 1 * t].position);
+                colorKey[t].color = pix;
+                colorKey[t].time = t * (1.0f / 7.0f);
+                alphaKey[t].alpha = 1.0f;
+                alphaKey[t].time = t * (1.0f / 7.0f);
+            }
+
+            colorKey[0].color = colorKey[1].color;
+            colorKey[0].time = 0.0f;
+            alphaKey[0].alpha = 1.0f;
+            alphaKey[0].time = 0.0f;
+
+            gradient.SetKeys(colorKey, alphaKey);
+
+            lr.colorGradient = gradient;
+            */
+
 
         }
 
+
+
+
     }
+
+    public void reColour(Texture2D tex)
+    {
+        this.tex = tex;
+        for (int i = 0; i < strands.Length; i++)
+        {
+            LineRenderer lr = strands[i].GetComponent<LineRenderer>();
+
+            List<Vector3> temp = new List<Vector3>();
+
+            for (int r = 0; r >= strands[i].GetComponent<BezierSpline>().Count; r++)
+            {
+                temp.Add(spline[i][r].position);
+            }
+
+            lr.SetPositions(temp.ToArray());
+            lr.startWidth = 0.01f;
+            lr.endWidth = 0.01f;
+
+            Texture2D stran = new Texture2D(data.GetLength(1) + offset + interp, 1);
+
+            for (int t = 0; t < data.GetLength(1) + offset + interp; t++)
+            {
+                stran.SetPixel(t, 0, getFromImage(spline[i / 3][t].position));
+            }
+            stran.Apply();
+
+            lr.material.SetTexture("_MainTex", stran);
+        }
+    }
+
+    /*
+
+    public void reColour(Texture2D tex)
+    {
+        this.tex = tex;
+        for (int i = 0; i < strands.Length; i++)
+        {
+            LineRenderer lr = strands[i].GetComponent<LineRenderer>();
+
+            List<Vector3> temp = new List<Vector3>();
+
+            for (int r = 0; r < strands[i].GetComponent<BezierSpline>().Count; r++)
+            {
+                temp.Add(spline[i][r].position);
+            }
+
+            lr.SetPositions(temp.ToArray());
+            lr.startWidth = 0.01f;
+            lr.endWidth = 0.01f;
+
+            Gradient gradient;
+            GradientColorKey[] colorKey;
+            GradientAlphaKey[] alphaKey;
+
+            gradient = new Gradient();
+
+            colorKey = new GradientColorKey[8];
+            alphaKey = new GradientAlphaKey[8];
+
+            Color pix = new Color();
+
+            for (int t = 1; t < 8; t++)
+            {
+                pix = getFromImage(spline[i][(int)(strands[i].GetComponent<BezierSpline>().Count / 2) + 1 * t].position);
+                colorKey[t].color = pix;
+                colorKey[t].time = t * (1.0f / 7.0f);
+                alphaKey[t].alpha = 1.0f;
+                alphaKey[t].time = t * (1.0f / 7.0f);
+            }
+
+            colorKey[0].color = colorKey[1].color;
+            colorKey[0].time = 0.0f;
+            alphaKey[0].alpha = 1.0f;
+            alphaKey[0].time = 0.0f;
+
+            gradient.SetKeys(colorKey, alphaKey);
+
+            lr.colorGradient = gradient;
+        }
+    }
+    */
+
+
+    Color getFromImage(Vector3 point)
+    {
+        float imagex = map(point.x, 1.0f, -1.0f, 1434.9249f * 1.2f, 2776.696f * 0.8f);
+        float imagey = map(point.y, 1.1f, -3.0f , 103.52703f * 1.2f, 2788.4207f * 0.8f);
+
+        int importx = (int)map(imagex, 1434.9249f * 1.2f, 2776.696f * 0.8f, (1434.9249f * 1.2f / 4288.0f * 2048.0f), (2776.696f * 0.8f / 4288.0f * 2048.0f));
+        int importy = (int)map(imagey, 103.52703f * 1.2f, 2788.4207f * 0.8f, (103.52703f * 1.2f / 2848.0f * 1024.0f), (2788.4207f * 0.8f / 2848.0f * 1024.0f));
+        return tex.GetPixel(importx, importy);
+    }
+
+
+
+
+
+
+
+
+    public void cut(Vector3 plane)
+    {
+        //Debug.Log(Vector3.Dot(plane, Vector3.up * 10.0f) < 0);
+        for (int i = 0; i < strands.Length; i++)
+        {
+            BezierSpline cur = strands[i].GetComponent<BezierSpline>();
+            for (int r = 1; r < cur.Count; r++)
+            {
+                if (Vector3.Dot(plane, cur[r].position) < 0)
+                {
+                    for (int l = r; l < cur.Count; l++)
+                    {
+                        //Debug.Log(i + " " + r + " " + l);
+                        cur[l].position = cur[r - 1].position;
+                    }
+                    break;
+                }
+            }
+        }
+        reColour(tex);
+    }
+
+    public void cut(Plane plane)
+    {
+        //Debug.Log(Vector3.Dot(plane, Vector3.up * 10.0f) < 0);
+        for (int i = 0; i < strands.Length; i++)
+        {
+            BezierSpline cur = strands[i].GetComponent<BezierSpline>();
+            for (int r = 1; r < cur.Count; r++)
+            {
+                if (!plane.GetSide(10.0f * Vector3.up))
+                {
+                    if (plane.GetSide(cur[r].position))
+                    {
+                        for (int l = r; l < cur.Count; l++)
+                        {
+                            //Debug.Log(i + " " + r + " " + l);
+                            cur[l].position = cur[r - 1].position;
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    if (!plane.GetSide(cur[r].position))
+                    {
+                        for (int l = r; l < cur.Count; l++)
+                        {
+                            //Debug.Log(i + " " + r + " " + l);
+                            cur[l].position = cur[r - 1].position;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        reColour(tex);
+    }
+
+    public void cutTEST(Vector3 plane)
+    {
+        int yay = 0;
+        int nay = 0;
+        for (int i = 0; i < strands.Length; i++)
+        {
+            BezierSpline cur = strands[i].GetComponent<BezierSpline>();
+            Vector3 lowest = cur[0].position;
+
+            for (int r = 0; r < cur.Length; r++)
+            {
+                if (Vector3.Dot(plane, cur[r].position) > 0) yay++;
+                else nay++;
+
+
+            }
+        }
+        Debug.Log(yay);
+        Debug.Log(nay);
+    }
+
+
+
+
+
+
+
+    float map(float s, float a1, float a2, float b1, float b2)
+    {
+        return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    public void hairstyle()
+    {
+        int count = 50;
+
+        Vector3[] old = new Vector3[count];
+        BezierSpline news;
+        Debug.Log(spline.Length);
+
+        for (int i = 0; i < spline.Length; i++)
+        {
+            news = spline[i].GetComponent<BezierSpline>();
+            for (int z = 0; z < count; z++)
+            {
+                old[z] = news.GetPoint((float)z / (float)count);
+            }
+
+            news.Initialize(count);
+
+            news[0].position = new Vector3(old[0].x, old[0].y, old[0].z);
+            //news[0].precedingControlPointLocalPosition = new Vector3(news[0].precedingControlPointLocalPosition.x / 10, news[0].precedingControlPointLocalPosition.y, news[0].precedingControlPointLocalPosition.z);
+            for (int r = 1; r < news.Count; r++)
+            {
+                news[r].position = new Vector3(0.1f * Mathf.Sin(r) + old[r].x, 0.1f * Mathf.Cos(r) + old[r].y, old[r].z);
+                //news[r].precedingControlPointLocalPosition = new Vector3(news[r].precedingControlPointLocalPosition.x / 10, news[r].precedingControlPointLocalPosition.y, news[r].precedingControlPointLocalPosition.z);
+            }
+            news.AutoConstructSpline2();
+        }
+        reColour(tex);
+    }
+
+    public void hairstyle2()
+    {
+        int count = 50;
+
+        Vector3[] old = new Vector3[count];
+        BezierSpline news;
+        Debug.Log(spline.Length);
+
+        for (int i = 0; i < spline.Length; i++)
+        {
+            news = spline[i].GetComponent<BezierSpline>();
+            for (int z = 0; z < count; z++)
+            {
+                old[z] = news.GetPoint((float)z / (float)count);
+            }
+
+            news.Initialize(count);
+
+            news[0].position = new Vector3(old[0].x, old[0].y, old[0].z);
+            //news[0].precedingControlPointLocalPosition = new Vector3(news[0].precedingControlPointLocalPosition.x / 10, news[0].precedingControlPointLocalPosition.y, news[0].precedingControlPointLocalPosition.z);
+            for (int r = 1; r < news.Count; r++)
+            {
+                news[r].position = new Vector3(0.1f * Mathf.Sin(r) + old[r].x, old[r].y, old[r].z);
+                //news[r].precedingControlPointLocalPosition = new Vector3(news[r].precedingControlPointLocalPosition.x / 10, news[r].precedingControlPointLocalPosition.y, news[r].precedingControlPointLocalPosition.z);
+            }
+            news.AutoConstructSpline2();
+        }
+        reColour(tex);
+    }
+
+
+
+
+
+
+
+
 }

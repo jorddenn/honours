@@ -1,0 +1,165 @@
+Table in, out, z, inZ;
+
+String file = "image1a";
+
+float maxX = 0, maxY = 0, maxZ;
+float minX = MAX_FLOAT, minY = MAX_FLOAT, minZ = MAX_FLOAT;
+int x = 0, y = 0;
+
+PImage a, im;
+
+void setup() {
+  size(1,1);
+  surface.setResizable(true);
+  
+
+  a = loadImage("image1a.JPG");
+  im = loadImage("image.jpg");
+  
+  surface.setSize(im.width, im.height);
+  
+  image(im, 0,0);
+  tint(255, 128);
+  image(a, 400, 129, 1290 / a.width, 869 / a.height);
+  
+
+  noTint();
+  
+  stroke(255);
+  
+  
+  in = loadTable(file + ".csv");
+  out = new Table();
+  inZ = loadTable("depth.csv");
+
+  for (int r = 0; r < in.getRowCount(); r +=2) {
+    for (int c = 0; c < in.getColumnCount(); c++) {
+      if (in.getFloat(r + 1, c) > maxX) {
+        maxX = in.getFloat(r + 1, c);
+      }
+      if (in.getFloat(r, c) > maxY) {
+        maxY = in.getFloat(r, c);
+      }
+      if (in.getFloat(r + 1, c) < minX) {
+        minX = in.getFloat(r + 1, c);
+      }
+      if (in.getFloat(r, c) < minY) {
+        minY = in.getFloat(r, c);
+      }
+    }
+  }
+  
+
+  for (int i = 0; i < in.getColumnCount(); i++) {
+    out.addColumn();
+  }
+
+  int outRow = 0;
+
+  for (int r = 0; r < in.getRowCount(); r += 2) {
+    out.addRow();
+    out.addRow();
+    out.addRow();
+    for (int c = 0; c < in.getColumnCount(); c++) {
+      out.setFloat(outRow, c, map(in.getFloat(r + 1, c), minX, maxX, 1, -1));
+      out.setFloat(outRow + 1, c, map(in.getFloat(r, c), minY, maxY, 1.1, -3));
+      out.setFloat(outRow + 2, c, checkz(in.getFloat(r, c), in.getFloat(r+1, c)));
+      //out.setFloat(outRow + 2, c, 1.2);
+    }
+    outRow += 3;
+  }
+  
+  mapZ();
+
+  println(in.getColumnCount(), in.getRowCount());
+  println(out.getColumnCount(), out.getRowCount());
+
+  
+
+  saveTable(out, file + "zz.csv");
+}
+
+float checkz(float x, float y){
+  x = map(x, 0, a.width, 400, (1290 + 400));
+  y = map(y, 0, a.height, 129, (869 + 129)) + 13;
+  x = map(x, 400, (1290 + 400), 0, inZ.getColumnCount());
+  y = map(y, 129, (869 + 129), 0, inZ.getRowCount());
+  
+  x = floor(x);
+  y = floor(y);
+  
+  while ((int) inZ.getFloat((int) x, (int) y) == 0){
+    if (x > inZ.getColumnCount() / 2) x--;
+    else x++;
+    y--;
+  }
+  
+  return inZ.getFloat((int) x, (int) y);
+}
+//1290, 869
+//400, 129
+
+
+
+
+void mapZ(){
+  for (int r = 2; r < out.getRowCount(); r += 3) {
+    for (int c = 0; c < out.getColumnCount(); c++) {
+      if (out.getFloat(r, c) > maxZ) {
+        maxZ = out.getFloat(r, c);
+      }
+      if (out.getFloat(r, c) < minZ) {
+        minZ = out.getFloat(r, c);
+      }
+    }
+  }
+  
+  println(minZ, maxZ);
+  
+  
+  for (int r = 2; r < out.getRowCount(); r += 3) {
+    for (int c = 0; c < out.getColumnCount(); c++) {
+      out.setFloat(r, c, map(out.getFloat(r, c), minZ, maxZ, 3.0, 2.0));
+    }
+  }
+}
+
+void draw(){
+  image(im, 0,0);
+  tint(255, 128);
+  image(a, 400, 129, a.width / (a.width / 1000), a.height / (a.height / 869));
+  noTint();
+}
+
+
+/*
+void draw(){
+  image(a, 0, 0, a.width / 3, a.height / 3);
+  image(im, 0,0);
+  stroke(255);
+  for (int r = 0; r < in.getRowCount(); r += 2) {
+    for (int c = 0; c < in.getColumnCount(); c++) {
+      point(xmap(in.getFloat(r + 1, c)), ymap(in.getFloat(r, c)) + 13);
+    }
+  }
+}
+
+float xmap(float x){
+  x = map(x, 0, a.width, 445, (1290 + 400) - 55);
+  //x = map(x, 400, (1290 + 400), 0, z.getColumnCount());
+  
+  if(x < z.getRowCount() / 2) x = ceil(x);
+  else x = floor(x);
+
+  return x;
+}
+
+float ymap(float y){
+  y = map(y, 0, a.height, 129, (869 + 129));
+  //y = map(y, 129, (869 + 129), 0, z.getRowCount());
+  
+  y = ceil(y);
+  
+  return y;
+}
+*/
