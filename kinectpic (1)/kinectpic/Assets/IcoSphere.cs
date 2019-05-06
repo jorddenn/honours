@@ -26,7 +26,6 @@ public class IcoSphere : MonoBehaviour
     BezierSpline[] spline;
     Vector3[,] origspline;
 
-
     struct TriangleIndices
     {
         public int v1;
@@ -340,6 +339,8 @@ public class IcoSphere : MonoBehaviour
         for (int i = 0; i < data.GetLength(0) - 3; i += 3)
         {
             GameObject pine = new GameObject();
+            pine.transform.SetParent(gameObject.transform, false);
+            pine.transform.localPosition = new Vector3(0, 0, 0);
             strands[i / 3] = pine;
             pine.name = "Curve " + i / 3;
             spline[i / 3] = pine.AddComponent<BezierSpline>();
@@ -402,6 +403,8 @@ public class IcoSphere : MonoBehaviour
 
             LineRenderer lr = pine.AddComponent<LineRenderer>();
 
+            //lr.useWorldSpace = false;
+
             lr.positionCount = data.GetLength(1) + offset + interp;
 
             List<Vector3> temp = new List<Vector3>();
@@ -429,6 +432,9 @@ public class IcoSphere : MonoBehaviour
             stran.Apply();
 
             lr.material.SetTexture("_MainTex", stran);
+
+            //lr.transform.SetParent(gameObject.transform);
+            //lr.transform.localPosition = new Vector3(0, 0, 0);
 
             /*
             Gradient gradient;

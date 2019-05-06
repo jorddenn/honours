@@ -1,0 +1,43 @@
+Table z;
+
+int x = 0, y = 0;
+int minBright = MAX_INT, maxBright = 0;
+
+void setup() {
+  //size(1,1, P3D);
+  //surface.setResizable(true);
+  z = loadTable("depth.csv");
+    
+  x = z.getColumnCount();
+  y = z.getRowCount();
+  
+  size(1000, 1000, P3D);
+  noSmooth();
+  
+  for (int i = 0; i < x; i++){
+    for (int r = 0; r < y; r++){
+      if (z.getInt(r, i) < minBright) minBright = z.getInt(r, i);
+      if (z.getInt(r, i) > maxBright) maxBright = z.getInt(r, i);
+    }
+  }
+
+  println(minBright);
+  println(maxBright);
+  
+  //surface.setSize(x * 2, y * 2);
+}
+
+void draw(){
+  background(0);
+  
+  
+  for (int i = 0; i < x; i++){
+    for (int r = 0; r < y; r++){
+      stroke(map(z.getInt(r, i), minBright, maxBright, 255, 0));
+      if(z.getInt(r, i) == 0){
+        stroke(0);
+      }
+      point(i * 3, r * 3, 1);
+    }
+  }
+}

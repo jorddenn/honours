@@ -68,6 +68,7 @@
     <Compile Include="Assets\testpoints.cs" />
     <Compile Include="Assets\ui.cs" />
     <Compile Include="Assets\vertexnormals.cs" />
+    <Compile Include="Assets\Visualize.cs" />
     <Reference Include="Unity.TextMeshPro.Editor">
       <HintPath>C:/Users/J/Documents/GitHub/honours/kinectpic (1)/kinectpic/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
