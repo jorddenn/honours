@@ -182,7 +182,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Prev
+  m_Text: Wavy
 --- !u!222 &33471759
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2444,7 +2444,7 @@ GameObject:
   - component: {fileID: 983888185}
   - component: {fileID: 983888186}
   m_Layer: 5
-  m_Name: Cut
+  m_Name: Vis
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2509,7 +2509,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 983888183}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 983888186}
+        m_MethodName: hider
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &983888183
@@ -2575,7 +2586,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83ae760239bff94499c3a6e6e3de4e20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canvas: {fileID: 1099144869}
+  canvas: {fileID: 1099144866}
   obj: {fileID: 1312544452}
 --- !u!1 &1099144866
 GameObject:
@@ -3688,7 +3699,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Next
+  m_Text: Curly
 --- !u!222 &1848087985
 CanvasRenderer:
   m_ObjectHideFlags: 0

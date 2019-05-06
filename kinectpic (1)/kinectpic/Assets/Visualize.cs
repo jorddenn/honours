@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Visualize : MonoBehaviour
 {
-    public Canvas canvas;
+    public GameObject canvas;
     public GameObject obj;
 
     GameObject[] spheres;
@@ -101,5 +101,10 @@ public class Visualize : MonoBehaviour
                 data[i, r] = x;
             }
         }
+    }
+
+    public void hider() {
+        canvas.SetActive(false);
+        obj.SetActive(true);
     }
 }
