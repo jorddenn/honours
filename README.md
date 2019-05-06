@@ -20,3 +20,5 @@ To open main program:
 3. use the colour picker but selecting a colour with the sliders, clicking the area of the image to paint and click apply
 4. cut hair by moving the cursor to the first point of the desired cutting plane, press '1' on the number row, move the cursor to the second paint and press '2' on the number row. Reset by clicking the play button to stop the program and restart
 5. to see the attempt at vizualizing the point cloud, click the vizualize button. The again is verry verry slow. The program uses bout 5GB of ram and I wasn't successful in increasing the performance.
+
+I was working on joining all the meshes into a single mesh to reduce the number of draw calls from ~250,000 (one for each point of the Kinect point cloud) to just 1 but Unity itself completely crashes, not my program but the entire engine, and I haven't figured out why since the method is taken directly from their documentation.
