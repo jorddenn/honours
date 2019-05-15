@@ -30,49 +30,65 @@ public class Visualize : MonoBehaviour
             }
         }
 
+        //GameObject spheres;
         spheres = new GameObject[data.GetLength(0) * data.GetLength(1)];
         //CombineInstance[] combine = new CombineInstance[data.GetLength(0) * data.GetLength(1)];
 
-        //Debug.Log(data.GetLength(0) * data.GetLength(1));
+        Debug.Log(data.GetLength(0) * data.GetLength(1));
+        Debug.Log(data.GetLength(1));
+        Debug.Log(data.GetLength(0));
 
         int index = 0;
 
+        Renderer rend;
+        Shader shader1 = Shader.Find("Diffuse");
+
+        Material[] mats = new Material[data.GetLength(0) * data.GetLength(1)];
+
         for (int i = 0; i < data.GetLength(0); i++)
-        {
+        //for (int i = 0; i < 10; i++)
+            {
             for (int r = 0; r < data.GetLength(1); r++)
             {
                 index = data.GetLength(0) * i + r;
                 //Debug.Log(index);
-                spheres[index] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                spheres[index] = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 spheres[index].transform.position = new Vector3(-3.0f + (6.0f * ((float)i / (float)data.GetLength(0))), -3.0f + (6.0f * ((float)r / (float)data.GetLength(1))), 0.0f);
                 Destroy(spheres[index].GetComponent<Collider>());
-                spheres[index].transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-                Renderer rend = spheres[index].GetComponent<Renderer>();
-                Shader shader1 = Shader.Find("Diffuse");
+                spheres[index].transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+                rend = spheres[index].GetComponent<Renderer>();
 
                 rend.material.shader = shader1;
                 col = 1 - data[i, r] / max;
                 rend.material.color = new Color(col, col, col, 1);
                 spheres[index].transform.SetParent(obj.transform);
+                mats[index] = rend.material;
             }
         }
 
-        /*
+        
         MeshFilter[] meshFilters = obj.GetComponentsInChildren<MeshFilter>();
+        
         CombineInstance[] combine = new CombineInstance[meshFilters.Length];
 
-        for (int i = 0; i < meshFilters.Length; i++)
+        for (int i = 0; i < combine.Length; i++)
         {
             combine[i].mesh = meshFilters[i].sharedMesh;
             combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
             meshFilters[i].gameObject.SetActive(false);
         }
 
-        
+        //obj.AddComponent<Renderer>();
+        //shader1 = Shader.Find("Diffuse");
+        //rend = obj.GetComponent<Renderer>();
+        //rend.material.shader = shader1;
+
         obj.AddComponent<MeshFilter>();
         obj.GetComponent<MeshFilter>().mesh = new Mesh();
-        obj.GetComponent<MeshFilter>().mesh.CombineMeshes(combine);
-        */
+        obj.GetComponent<MeshFilter>().mesh.CombineMeshes(combine, false, true);
+
+        obj.GetComponent<MeshRenderer>().materials = mats;
+        
 
         obj.transform.Rotate(new Vector3(0, 0, -90));
         obj.transform.position = new Vector3(-6.0f, -1.0f, 0.0f);
