@@ -422,7 +422,7 @@ public class IcoSphere : MonoBehaviour
 
             lr.material = lineMat;
 
-
+            /*
             Texture2D stran = new Texture2D(data.GetLength(1) + offset + interp, 1);
 
             for (int t = 0; t < data.GetLength(1) + offset + interp; t++)
@@ -432,11 +432,12 @@ public class IcoSphere : MonoBehaviour
             stran.Apply();
 
             lr.material.SetTexture("_MainTex", stran);
+            */
 
             //lr.transform.SetParent(gameObject.transform);
             //lr.transform.localPosition = new Vector3(0, 0, 0);
 
-            /*
+            
             Gradient gradient;
             GradientColorKey[] colorKey;
             GradientAlphaKey[] alphaKey;
@@ -464,7 +465,7 @@ public class IcoSphere : MonoBehaviour
             gradient.SetKeys(colorKey, alphaKey);
 
             lr.colorGradient = gradient;
-            */
+            
 
 
         }
@@ -477,6 +478,35 @@ public class IcoSphere : MonoBehaviour
     public void reColour(Texture2D tex)
     {
         this.tex = tex;
+        for (int i = 0; i < strands.Length; i++)
+        {
+            LineRenderer lr = strands[i].GetComponent<LineRenderer>();
+
+            List<Vector3> temp = new List<Vector3>();
+
+            for (int r = 0; r >= strands[i].GetComponent<BezierSpline>().Count; r++)
+            {
+                temp.Add(spline[i][r].position);
+            }
+
+            lr.SetPositions(temp.ToArray());
+            lr.startWidth = 0.01f;
+            lr.endWidth = 0.01f;
+
+            Texture2D stran = new Texture2D(data.GetLength(1) + offset + interp, 1);
+
+            for (int t = 0; t < data.GetLength(1) + offset + interp; t++)
+            {
+                stran.SetPixel(t, 0, getFromImage(spline[i / 3][t].position));
+            }
+            stran.Apply();
+
+            lr.material.SetTexture("_MainTex", stran);
+        }
+    }
+
+    public void reColour()
+    {
         for (int i = 0; i < strands.Length; i++)
         {
             LineRenderer lr = strands[i].GetComponent<LineRenderer>();
